@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"github.com/ipfs/go-ipfs/core/coreunix"
 	"io"
 	"os"
 	"path"
@@ -37,6 +38,7 @@ const (
 	wrapOptionName        = "wrap-with-directory"
 	onlyHashOptionName    = "only-hash"
 	chunkerOptionName     = "chunker"
+	encryptOptionName     = "encrypt"
 	pinOptionName         = "pin"
 	rawLeavesOptionName   = "raw-leaves"
 	noCopyOptionName      = "nocopy"
@@ -132,6 +134,7 @@ only-hash, and progress/status related flags) will change the final hash.
 		cmds.BoolOption(onlyHashOptionName, "n", "Only chunk and hash - do not write to disk."),
 		cmds.BoolOption(wrapOptionName, "w", "Wrap files with a directory object."),
 		cmds.StringOption(chunkerOptionName, "s", "Chunking algorithm, size-[bytes], rabin-[min]-[avg]-[max] or buzhash").WithDefault("size-262144"),
+		cmds.BoolOption(encryptOptionName, "e", "Encrypt the given File"),
 		cmds.BoolOption(pinOptionName, "Pin this object when adding.").WithDefault(true),
 		cmds.BoolOption(rawLeavesOptionName, "Use raw blocks for leaf nodes."),
 		cmds.BoolOption(noCopyOptionName, "Add the file using filestore. Implies raw-leaves. (experimental)"),
@@ -150,6 +153,14 @@ only-hash, and progress/status related flags) will change the final hash.
 
 		if quiet || silent {
 			return nil
+		}
+
+		encrypt, _ := req.Options[encryptOptionName].(bool)
+
+		if !encrypt {
+			return nil
+		} else {
+			coreunix.Encrypt(os.Args[2])
 		}
 
 		// ipfs cli progress bar defaults to true unless quiet or silent is used
@@ -172,6 +183,7 @@ only-hash, and progress/status related flags) will change the final hash.
 		hash, _ := req.Options[onlyHashOptionName].(bool)
 		silent, _ := req.Options[silentOptionName].(bool)
 		chunker, _ := req.Options[chunkerOptionName].(string)
+		encrypter, _ := req.Options[encryptOptionName].(string)
 		dopin, _ := req.Options[pinOptionName].(bool)
 		rawblks, rbset := req.Options[rawLeavesOptionName].(bool)
 		nocopy, _ := req.Options[noCopyOptionName].(bool)
@@ -205,6 +217,7 @@ only-hash, and progress/status related flags) will change the final hash.
 			options.Unixfs.InlineLimit(inlineLimit),
 
 			options.Unixfs.Chunker(chunker),
+			options.Unixfs.Encrypt(encrypter),
 
 			options.Unixfs.Pin(dopin),
 			options.Unixfs.HashOnly(hash),
